@@ -10,13 +10,10 @@ from cv_bridge import CvBridge
 class objectDetection:
     
     def __init__(self):
-        rospy.loginfo('before service wait')
         rospy.wait_for_service('custom/cv/detectron/detect')
-        
-        rospy.loginfo('before service init')
         self.detect_service = rospy.ServiceProxy('custom/cv/detectron/detect', Detectron)
         
-    
+        
     def detect_objects(self):
         try:
             response = self.detect_service()
@@ -26,8 +23,8 @@ class objectDetection:
             cv2.imwrite("./src/images/object-detection-" + time.strftime("%H%M%S") + ".png", annotated_image)
             bounding_boxes = response.bounding_boxes
 
-            for bbox in bounding_boxes:
-                print(f"Bounding Box: xmin={bbox.xmin}, ymin={bbox.ymin}, xmax={bbox.xmax}, ymax={bbox.ymax}, class_id={bbox.class_id}, class_name={bbox.class_name}")
+            # for bbox in bounding_boxes:
+            #     print(f"Bounding Box: xmin={bbox.xmin}, ymin={bbox.ymin}, xmax={bbox.xmax}, ymax={bbox.ymax}, class_id={bbox.class_id}, class_name={bbox.class_name}")
             
             return bounding_boxes
             
