@@ -7,6 +7,7 @@ from std_msgs.msg import String
 
 from qt_robot_interface.srv import behavior_talk_text
 from qt_gesture_controller.srv import gesture_play
+from qt_robot_interface.srv import emotion_show
 from custom_interfaces.srv import MicrophoneBasedSpeechRecognition
 
 from object_detection import objectDetection
@@ -17,29 +18,30 @@ class ISpy():
     def __init__(self):
         rospy.wait_for_service('/qt_robot/speech/say')
         rospy.wait_for_service('/qt_robot/gesture/play')
+        rospy.wait_for_service('/qt_robot/emotion/show')
         rospy.wait_for_service('/custom/speech/sr/microphone_recognize')
         rospy.loginfo('All services are available')
                 
         self.talk_text_service = rospy.ServiceProxy('/qt_robot/speech/say', behavior_talk_text)
         self.gesture_play_service = rospy.ServiceProxy('/qt_robot/gesture/play', gesture_play)
+        self.emotion_show_service = rospy.ServiceProxy('/qt_robot/emotion/show', emotion_show)
         self.object_detection = objectDetection()        
         self.speech_recognition_service = rospy.ServiceProxy('/custom/speech/sr/microphone_recognize', MicrophoneBasedSpeechRecognition)
         rospy.loginfo('All services are initialized')
         
-        self.gemini = GeminiAdapter(
-            'We are playing a game of i spy i will shortly give you the object that currently is spied. '+
-            'If I guess the object correct you will just return the text "correct". if its wrong you will just return the text "wrong".'+
-            'Please answer all the questions about the spied object and if I ask for a hint give me a little hint.')
-        rospy.loginfo('Init Gemini request succeeded')
-
-        self.object_whitelist = ['laptop', 'cell phone', 'bottle']
+        self.object_whitelist = ['laptop', 'cell phone', 'chair', 'bottle']
         
     
     def play_game(self):
         try:
-            self.talk_text_service("Hello, let's play the game 'I spy'")
+            self.gemini = GeminiAdapter(
+                'We are playing a game of i spy i will shortly give you the object that currently is spied. '+
+                'If I guess the object correct you will just return the text "correct". if its wrong you will just return the text "wrong".'+
+                'Please answer all the questions about the spied object and if I ask for a hint give me a little hint.')
             
-            # self.gesture_play_service("QT/bye", 0)
+            self.talk_text_service("Hello, let's play the game 'I spy'")
+                      
+            self.emotion_show_service("QT/showing_smile")
             
             spy_object = self._choose_spy_object()
             
@@ -55,7 +57,7 @@ class ISpy():
                 #TODO: check if speech_input.text predicts the correct object with ai service
                 res = self.gemini.request(speech_input.text)
                 rospy.loginfo(res)
-                if res == 'correct':
+                if 'correct' in res.lowercase():
                     guessed_right = True
                 else:
                     self.talk_text_service('Thats wrong')
@@ -63,28 +65,49 @@ class ISpy():
                 
             self.talk_text_service("You guessed the word!")
             
+            self.emotion_show_service("QT/happy")
+            
+            self.gesture_play_service("QT/clapping", 0)
+            
         except rospy.ServiceException as e:
             rospy.loginfo(f"Service call failed: {e}")
             
             
         try:
-            self.talk_text_service("Now you can choose an object and I try to guess it")
+            self.talk_text_service("Now we switch roles")
             
-            self.gesture_play_service("QT/bye", 0)
-            
-            player_ispy_text = self.speech_recognition_service("en-US")
-            
+            self.emotion_show_service("QT/showing_smile")
+                        
             objects = self.object_detection.detect_objects()
             
             object_list = [object for object in objects if object.class_name in self.object_whitelist]
             
-            # Player: I spy an object that starts with the letter l.
+            self.talk_text_service("Tell me the first letter of an object that you can see")
             
-            # give ai service player_object and object_list
+            player_object = self.speech_recognition_service("en-US")
             
-            #TODO: guess an object in the list and check if its correct with ai service
+            self.gemini = GeminiAdapter(
+            'We are playing a game of i spy i will shortly give you the prompt to guess a specific item in the following list. '+
+            'Item list: "' + str(object_list) + '".' + 'This is the player prompt: "' + player_object.text + '".'
+            'Please guess the object and ask if it is the searched object.')
             
-            self.talk_text_service("ai response")
+            response_list = []
+            guessed_right = False
+            while(not guessed_right):
+                guessed_object = self.gemini.request("The already given answers: " + str(response_list) if response_list else "")
+                self.talk_text_service(guessed_object)
+                speech_input = self.speech_recognition_service("en-US")
+                if "correct" in speech_input.lowercase():
+                    guessed_right = True
+                      
+            self.talk_text_service("Yay!")
+            
+            self.emotion_show_service("QT/happy")
+            
+            self.gesture_play_service("QT/trauma_dance", 0)
+            
+            # TODO: custom motion
+            # TODO: emotion?
             
         except rospy.ServiceException as e:
             rospy.loginfo(f"Service call failed: {e}")
