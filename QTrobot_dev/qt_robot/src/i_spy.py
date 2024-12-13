@@ -43,6 +43,7 @@ class ISpy():
             
             spy_object = self._choose_spy_object()
             
+            # TODO: necessary
             self.gemini.request('the spied object is '+ spy_object)
 
             i_spy_text = f'I spy something starting with the letter {spy_object[0]}'

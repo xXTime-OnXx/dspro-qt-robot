@@ -11,7 +11,7 @@ from custom_interfaces.srv import MicrophoneBasedSpeechRecognition
 
 from object_detection import objectDetection
 from gemini_adapter import GeminiAdapter
-from challenger import Challenger
+from QTrobot_dev.qt_robot.src.players.challenger import Challenger
 from player import Player
 
 class ISpy():
