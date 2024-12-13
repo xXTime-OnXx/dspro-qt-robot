@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
 
     try:
-        name = "trauma_dance"
+        name = "look_around_custom"
         parts = ["left_arm", "right_arm", "head"]
         res = setControlMode(parts, 1)
         if not res.status:

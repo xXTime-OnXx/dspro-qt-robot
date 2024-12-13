@@ -1,5 +1,6 @@
 from config import api_key
 import requests
+import rospy
 
 class GeminiAdapter:
     __gemini_url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + api_key
@@ -16,7 +17,9 @@ class GeminiAdapter:
         }
 
     def request(self, text):
-        res = requests.post(self.__gemini_url, json = self.toPythonRequest(f'{self.__init_prompt} {text}'))
+        json = self.toPythonRequest(f'{self.__init_prompt} {text}')
+        rospy.loginfo(f'gemini request body: {json}')
+        res = requests.post(self.__gemini_url, json=json)
 
         if res.status_code != 200:
             raise Exception("Request to Gemini failed: "+ res.text)
