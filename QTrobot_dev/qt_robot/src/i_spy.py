@@ -26,6 +26,12 @@ class ISpy():
         self.speech_recognition_service = rospy.ServiceProxy('/custom/speech/sr/microphone_recognize', MicrophoneBasedSpeechRecognition)
         rospy.loginfo('All services are initialized')
         
+        self.gemini = GeminiAdapter(
+            'We are playing a game of i spy i will shortly give you the object that currently is spied. '+
+            'If I guess the object correct you will just return the text "correct". if its wrong you will just return the text "wrong".'+
+            'Please answer all the questions about the spied object and if I ask for a hint give me a little hint.')
+        rospy.loginfo('Init Gemini request succeeded')
+
         self.object_whitelist = ['laptop', 'cell phone', 'bottle']
         
     
@@ -33,18 +39,27 @@ class ISpy():
         try:
             self.talk_text_service("Hello, let's play the game 'I spy'")
             
-            self.gesture_play_service("QT/bye", 0)
+            # self.gesture_play_service("QT/bye", 0)
             
             spy_object = self._choose_spy_object()
             
+            self.gemini.request('the spied object is '+ spy_object)
+
             i_spy_text = f'I spy something starting with the letter {spy_object[0]}'
             self.talk_text_service(i_spy_text)
             
             guessed_right = False
             while(not guessed_right):
-                response = self.speech_recognition_service("en-US")
+                speech_input = self.speech_recognition_service("en-US")
                 
-                #TODO: check if response.text predicts the correct object with ai service
+                #TODO: check if speech_input.text predicts the correct object with ai service
+                res = self.gemini.request(speech_input.text)
+                rospy.loginfo(res)
+                if res == 'correct':
+                    guessed_right = True
+                else:
+                    self.talk_text_service('Thats wrong')
+
                 
             self.talk_text_service("You guessed the word!")           
             
@@ -80,7 +95,6 @@ class ISpy():
     
 if __name__ == '__main__':
     rospy.init_node('i_spy_robot', anonymous=True)
-    
-    GeminiAdapter()
-    i_spy = ISpy()
+
+    i_spy = ISpy() 
     i_spy.play_game()

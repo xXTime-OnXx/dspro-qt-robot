@@ -1,18 +1,32 @@
-import google.generativeai as genai
+from config import api_key
+import requests
+
+
 
 class GeminiAdapter: 
+    __gemini_url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + api_key
+# TODO store history of messages with role player / bot
+    def __init__(self, initMessage):
 
-    def __init__(self):
-        genai.configure(api_key="AIzaSyCW_3vt1S1cr0pIUMqDU8W1-qRFTLo1jgg")
-        self.model = genai.GenerativeModel("gemini-1.5-flash")
-        self.generation_config = genai.types.GenerationConfig(
-            candidate_count=1,
-            max_output_tokens=20,
-            temperature=1.0,
-        ),
-        #TODO: init Prompt
-        response = self.model.generate_content("Explain how AI works")
-        print(response)
+        res = requests.post(self.__gemini_url, json = self.toPythonRequest(initMessage))
+
+        if res.status_code != 200:
+            raise Exception("Init Request to Gemini failed: "+ res.text)
     
+    def toPythonRequest(self, text):
+        return {
+            "contents": [{
+                "parts": [{"text": text}]
+            }]
+        }
+    
+    def request(self, text):
+        res = requests.post(self.__gemini_url, json = self.toPythonRequest(text))
+
+        if res.status_code != 200:
+            raise Exception("Request to Gemini failed: "+ res.text)
+
+        return res.json()['candidates'][0]['content']['parts'][0]['text']
+
 if __name__ == '__main__':
     GeminiAdapter()
