@@ -61,7 +61,7 @@ class ISpy():
                     self.talk_text_service('Thats wrong')
 
                 
-            self.talk_text_service("You guessed the word!")           
+            self.talk_text_service("You guessed the word!")
             
         except rospy.ServiceException as e:
             rospy.loginfo(f"Service call failed: {e}")
@@ -72,11 +72,15 @@ class ISpy():
             
             self.gesture_play_service("QT/bye", 0)
             
-            player_object = self.speech_recognition_service("en-US")
+            player_ispy_text = self.speech_recognition_service("en-US")
             
             objects = self.object_detection.detect_objects()
             
             object_list = [object for object in objects if object.class_name in self.object_whitelist]
+            
+            # Player: I spy an object that starts with the letter l.
+            
+            # give ai service player_object and object_list
             
             #TODO: guess an object in the list and check if its correct with ai service
             
